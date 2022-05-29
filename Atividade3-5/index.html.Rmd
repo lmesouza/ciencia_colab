@@ -51,7 +51,7 @@ flying_gbif$data$issues %>%
   unlist()
 ```
 
-O conjunto de dados retornado pelo GBIF apresenta diversas variáveis, das quais, 14 foram selecionadas para começar a análise, fiz a seleção  por meio do pacote `dplyr`, que foi carregado anteriormente utilizando o pacote `tydiverse`. Com as variáveis de interesse selecionadas, gerei um data frame com 500 observações, cuja cada observação corresponde a uma ocorrência da espécie. Depois de utilizar a função `distinct`,o número de observações caiu para 461, pois essa função verifica as observações. Então, utilizei a função `unique` para remover as observações duplicadas.
+O conjunto de dados retornado pelo GBIF apresenta diversas variáveis, das quais, 14 foram selecionadas para começar a análise, fiz a seleção  por meio do pacote `dplyr`. Com as variáveis de interesse selecionadas, gerei um data frame com 500 observações, cuja cada observação corresponde a uma ocorrência da espécie. Depois de utilizar a função `distinct`,o número de observações caiu para 461, pois essa função verifica as observações. Então, utilizei a função `unique` para remover as observações duplicadas.
 
 ```{r}
 #seleção de variáveis
@@ -159,7 +159,7 @@ ggplot() +
 ```
 
 Outro critério utilizado para checagem de dados foi checar a profundidade por região oceanográfica. O *Dactylopterus volitans* é um peixe encontrado em recifes, regiões estuarianas e também é muito comum encontra-lo em áreas arenosas, ou seja, essa é uma espécie que espera-se ser encontrada em até no máximo 100 metros de profundidade`[^1]`.
-`[^1]: [FishBase](https://tidyverse.tidyverse.org/).` 
+`[^1]: [FishBase]` 
 ```{r, message = FALSE, warning=FALSE}
 # checar profundidade
 flying_gbif_ok %>% 
@@ -273,9 +273,9 @@ write.csv(all_data, "C:/Users/letic/Documents/Pasta de atividades/Mestrado/Ciên
 ```
 
 # Análises exploratórias  
-Após a limpeza dos dados e junção dos dada frames dos dois repositório, foram elaboradas análises exploratórias simples com a finalidade de responder duas perguntas. A primeira análise busca responder a seguinte pergunta: Quais são os anos com maior frequência de ocorrência de *Dactylopterus volitans*?  
+Após a limpeza dos dados e junção dos dada frames, foram elaboradas análises exploratórias simples com a finalidade de responder duas perguntas. A primeira análise busca responder a seguinte pergunta: Quais são os anos com maior frequência de ocorrência de *Dactylopterus volitans*?  
   
-A maior frequência de ocorrências foi no ano de 2014, enquanto que nos anos seguintes a frequência foi diminuindo, como é possível observar no histograma abaixo. Para montar o histograma usei a função `hist` que me permite montar histogramas de uma forma bem simples. Essa função também permite algumas alterações como mudança das cores, preenchimento e rótulos. Um problema encontrado nos data frames fornecidos pelo OBIS é que a variável `year` não é reconhecida como uma variável ordinal, então neste caso está sendo representado apenas os anos indicados pelo data frame do GBIF.  
+A maior frequência de ocorrências foi no ano de 2014, enquanto que nos anos seguintes a frequência foi diminuindo, como é possível observar no histograma abaixo. Para montar o histograma usei a função `hist` que me permitiu montar histogramas de uma forma bem simples. Essa função também permite algumas alterações como mudança das cores, preenchimento e rótulos. Um problema encontrado nos data frames fornecidos pelo OBIS é que a variável `year` não é reconhecida como uma variável ordinal, então neste caso está sendo representado apenas os anos indicados pelo data frame do GBIF.  
 
 ```{r}
 hist(all_data$year, xlab = "Anos", ylab = "Frequência", main = "Histograma das ocorrências de Dactylopterus volitans")
