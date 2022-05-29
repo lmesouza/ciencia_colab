@@ -1,0 +1,304 @@
+---
+title: "Atividade Final"
+author: "Letícia Maria Evangelista de Souza"
+output:
+    html_document:
+       highlight: textmate
+       theme: flatly
+       number_sections: no
+       toc: yes
+       toc_float:
+         collapsed: yes
+         smooth_scroll: no
+---
+
+# *Dactylopterus volitans*  
+A espécie escolhida para realizar a atividade é o *Dactylopterus volitans*, conhecido como peixe-voador. O peixe-voador é uma espécie marinha e estuariana associada a recifes que recebe esse nome por suas nadadeiras terem aparência de asas quando estão abertas. A distibuição dessa espécie se estende por todo o Atlântico, do Canadá a Argentina, do outro lado Atlântico, se estende pela da África bem como no Mar Mediterrâneo. Você pode acessar mais informações sobre o *Dactylopterus volitans* no  [FishBase](https://fishbase.mnhn.fr/Summary/SpeciesSummary.php?id=1021&lang=english).
+
+![*Dactylopterus volitans* - BaseFish](https://www.fishbase.de/images/thumbnails/jpg/tn_Davol_u2.jpg)   
+  
+# GBIF
+## Acesso e limpeza de dados
+
+
+Os dados foram extraídos dos repositórios  [GBIF](https://www.gbif.org/) e [OBIS](https://obis.org/), com os pacotes `rgbif` e `robis`. O GBIF foi o repósitório selecionado para iniciar a atividade. O pacote  [tidyverse](https://tidyverse.tidyverse.org/), foi empregado no script para carregar os demais pacotes, como o `dplyr` (para manipular dados) e o `ggplot` (para visualização de dados), que posteriormente foram utilizados nesta atividade. Depois carreguei o pacote [rgbif](https://www.gbif.org/pt/tool/81747/rgbif), que permite o acesso aos dados do GBIF pelo r. O pacote `rgbif` possui a função `occ_data`, essa que permite buscar espécies pelo nome científico, numeração ou local. O script que utilizei foi o que segue abaixo:
+
+```{r, message = FALSE}
+library(tidyverse)
+library(rgbif)
+flying_gbif <- occ_data(scientificName = "Dactylopterus volitans", 
+                        hasCoordinate = TRUE,
+                        hasGeospatialIssue=FALSE)
+```
+
+Comecei a limpeza dos dados por meio da função `dim` para checar a dimensão dos dados retornados pelo repositório. O caracter $ no script serve para acessar os data frames retornados pelo GBIF . Já que, antes de utilizarmos os data frames, devemos checar as variáveis presentes e também os tipos de erros encontrados, eles podem ser checados pela função `issue` e a função `strsplit`, que individualiza os erros encontrados e permite conferi-los. Como pode ser observado no script abaixo:
+
+```{r}
+# dimensoes
+dim(flying_gbif)
+dim(flying_gbif$data)
+
+# checar campos
+flying_gbif$data %>% names
+
+#problemas indentificados pelo repositório
+gbif_issues()
+
+#checagem dos problemas encontrados na base
+flying_gbif$data$issues %>% 
+  unique() %>% 
+  strsplit(., "[,]") %>% 
+  unlist()
+```
+
+O conjunto de dados retornado pelo GBIF apresenta diversas variáveis, das quais, 14 foram selecionadas para começar a análise, fiz a seleção  por meio do pacote `dplyr`, que foi carregado anteriormente utilizando o pacote `tydiverse`. Com as variáveis de interesse selecionadas, gerei um data frame com 500 observações, cuja cada observação corresponde a uma ocorrência da espécie. Depois de utilizar a função `distinct`,o número de observações caiu para 461, pois essa função verifica as observações. Então, utilizei a função `unique` para remover as observações duplicadas.
+
+```{r}
+#seleção de variáveis
+flying_gbif1 <- flying_gbif$data %>%
+  dplyr::select(scientificName, acceptedScientificName, decimalLatitude, decimalLongitude,
+                issues, waterBody, basisOfRecord, occurrenceStatus, rightsHolder, 
+                datasetName, recordedBy, depth, locality, habitat, year) 
+#ocorrências unicas
+flying_gbif1 <- flying_gbif1 %>% 
+  distinct() 
+# checar niveis dos fatores
+lapply(flying_gbif1, unique)
+```
+
+Além da checagem dos erros encontrados na base, é interessante fazer uma chegacagem mais refinada dos dados. Um exemplo é verificar se as coordenadas disponibilizadas são realmente válidas, pois muitas vezes essas coordenadas podem ser associadas a capitais, porém estas estão em terra e a espécie selecionada neste trabalho é marinha. Neste caso, a checagem foi realizada por meio dos pacotes `CoordinateCleaner` e `bcd`, como mostra o script abaixo.   
+```{r, message=FALSE}
+library(bdc)
+library(CoordinateCleaner)
+```
+
+```{r}
+# checar coordenadas válidas
+check_pf <- 
+  bdc::bdc_coordinates_outOfRange(
+    data = flying_gbif1,
+    lat = "decimalLatitude",
+    lon = "decimalLongitude")
+```
+
+```{r, message=FALSE}
+# checar coordenadas válidas e próximas a capitais (muitas vezes as coordenadas são erroneamente associadas a capitais dos países)
+
+cl <- flying_gbif1 %>%
+  select(acceptedScientificName, decimalLatitude, decimalLongitude) %>%
+  rename(decimallongitude = decimalLongitude,
+         decimallatitude = decimalLatitude,
+         scientificName = acceptedScientificName) %>% 
+  as_tibble() %>% 
+  mutate(val = cc_val(., value = "flagged"),
+         sea = cc_sea(., value = "flagged"),
+         capital = cc_cap(., value = "flagged"))
+cl %>% 
+  rename(decimalLongitude = decimallongitude,
+         decimalLatitude = decimallatitude) %>% 
+  bdc::bdc_quickmap(., col_to_map = "capital")  
+cl %>% 
+  rename(decimalLongitude = decimallongitude,
+         decimalLatitude = decimallatitude) %>% 
+  bdc::bdc_quickmap(., col_to_map = "sea") 
+```
+
+As coordenadas são válidas, mas algumas ocorrências estão sinalizadas como próximas a capitas. Para excluir ocorrências em terra foi feita a checagem da distribuição da espécie em relação as regiões oceanográficas utilizando a variável `waterBody`, que mostra em qual região oceanográfica a espécie foi encontrada. Na tabela abaixo é possível observar quais são as regiões oceanográficas, mas com os gráficos é possível visualizar a distribuição de ocorrências por região, para isso utilizei o pacote `ggplot`.   
+
+```{r}
+# investigar niveis suspeitos
+flying_gbif1 %>% 
+  distinct(waterBody) %>% 
+  pull()
+
+# waterBody
+flying_gbif1 %>%
+  group_by(waterBody) %>% 
+  summarise(occ = length(scientificName)) %>% 
+  ggplot(aes(occ, y=waterBody)) +
+  geom_bar(stat = 'identity')
+```
+
+Conforme abordado no início do texto, o *Dactylopterus volitans* é uma espécie com ocorrências no Atlântico e no Mediterrâneo. Logo, ocorrências registradas no Mar de Celebes podem ser consideradas suspeitas, pois fica no Oceano Pacífico. Neste caso, escolhi excluir essas ocorrências.  
+
+```{r}
+# fonte das regioes erradas
+flying_gbif1 %>% 
+  filter(waterBody %in% c("Celebes Sea")) %>% 
+  distinct(datasetName)
+```
+  
+A tabela gerada após a filtragem, mostrou que essas ocorrências foram registradas por mergulhadores que fazem parte de uma plantaforma específica de ciência cidadã. A maioria das ocorrências suspeitas estavam associadas a esse tipo de coleta, assim preferi excluir as ocorrências associdadas a ela.  
+```{r}
+# 6 ocorrencias
+flying_gbif1 %>% 
+  filter(datasetName %in% c("Diveboard - Scuba diving citizen science"))
+# filtrar todas do dataset suspeito
+flying_gbif_ok <- flying_gbif1 %>% 
+  filter(!datasetName %in% c("Diveboard - Scuba diving citizen science"))
+```
+
+```{r, message=FALSE}
+library(ggmap)
+library(maps)
+library(mapdata)
+
+world <- map_data('world')
+```
+
+
+```{r}
+# checar pontos
+# sem ocorrências no Mar de Celebes!
+ggplot() +
+  geom_polygon(data = world, aes(x = long, y = lat, group = group)) +
+  coord_fixed() +
+  theme_classic() +
+  geom_point(data = flying_gbif_ok, aes(x = decimalLongitude, y = decimalLatitude), color = "red") +
+  labs(x = "longitude", y = "latitude", title = expression(italic("Dactylopterus volitans")))
+```
+
+Outro critério utilizado para checagem de dados foi checar a profundidade por região oceanográfica. O *Dactylopterus volitans* é um peixe encontrado em recifes, regiões estuarianas e também é muito comum encontra-lo em áreas arenosas, ou seja, essa é uma espécie que espera-se ser encontrada em até no máximo 100 metros de profundidade`[^1]`.
+`[^1]: [FishBase](https://tidyverse.tidyverse.org/).` 
+```{r, message = FALSE, warning=FALSE}
+# checar profundidade
+flying_gbif_ok %>% 
+  ggplot(aes(x = depth, fill = waterBody)) +
+  geom_histogram()
+```
+  
+# OBIS  
+Os procedimentos de limpeza e seleção de variáveis aplicados aos dataframes do GBIF também foram aplicados aos disponibilizados pelo OBIS. Aqui foi utlizado o pacote `robis` e a função `occurrence`, tem que a mesma função que o `occ_data` do `rbif`. Um ponto interessante é que o OBIF utiliza o sistema Darwin Core, então pode-se encontrar variávies com mesmo nome, neste caso a coluna `flag` utilizada para reportar problemas.    
+```{r, message = FALSE}
+## OBIS
+flying_obis <- robis::occurrence("Dactylopterus volitans")
+# checar dados
+names(flying_obis)
+
+```
+
+
+```{r}
+
+# check NA em datasetName
+flying_obis1 <- flying_obis %>% 
+  dplyr::select(scientificName, decimalLatitude, decimalLongitude, bathymetry,
+                flags, waterBody, basisOfRecord, occurrenceStatus, rightsHolder, 
+                datasetName, recordedBy, depth, locality, habitat) %>% 
+  distinct()
+
+# check problemas reportados (flags)
+flying_obis1 %>% 
+  distinct(flags)
+```
+
+
+```{r}
+# check NA em datasetName
+flying_obis1 %>% 
+  filter(!flags %in% c("no_depth,on_land", "on_land", "on_land,depth_exceeds_bath", "depth_exceeds_bath,on_land"),
+         is.na(datasetName)) %>% 
+  distinct(waterBody)
+```
+
+```{r, , message = FALSE, warning=FALSE}
+# depth ok
+flying_obis1 %>% 
+  filter(!flags %in% c("no_depth,on_land", "on_land", "on_land,depth_exceeds_bath", "depth_exceeds_bath,on_land"),
+         !is.na(datasetName),
+         !waterBody %in% c("Asia", "indien", "pacifique")) %>% 
+  ggplot(aes(x = depth, fill = waterBody)) +
+  geom_histogram() 
+```
+
+```{r}
+# checar niveis
+flying_obis1 %>% 
+  filter(!flags %in% c("no_depth,on_land", "on_land", "on_land,depth_exceeds_bath", "depth_exceeds_bath,on_land"),
+         !is.na(datasetName),
+         !waterBody %in% c("Asia", "indien", "pacifique")) %>% 
+  lapply(., unique)
+
+# ok
+flying_obis_ok <- flying_obis1 %>% 
+  filter(!flags %in% c("no_depth,on_land", "on_land", "on_land,depth_exceeds_bath", "depth_exceeds_bath,on_land"),
+         !is.na(datasetName),
+         !waterBody %in% c("Asia", "indien", "pacifique", NA)) 
+
+```
+
+```{r}
+# check
+ggplot() +
+  geom_polygon(data = world, aes(x = long, y = lat, group = group)) +
+  coord_fixed() +
+  theme_classic() +
+  geom_point(data = flying_obis_ok, aes(x = decimalLongitude, y = decimalLatitude, color = waterBody)) +
+  labs(x = "longitude", y = "latitude", title = expression(italic("Dactylopterus volitans")))
+```
+
+Por fim, uni todas as ocorrências do GBIF e do OBIS em um único data frame, com checagem dos dados para ver se existiam duplicatas ou outros problemas.
+
+```{r, message = FALSE}
+# unir GBIF e OBIS
+
+# ver diferencas
+setdiff(names(flying_gbif_ok), names(flying_obis_ok))
+setdiff(names(flying_obis_ok), names(flying_gbif_ok))
+
+
+all_data <- bind_rows(flying_gbif_ok %>% 
+                        mutate(repo = paste0("gbif", row.names(.))), 
+                      flying_obis_ok %>% 
+                        mutate(repo = paste0("obis", row.names(.)))) %>%
+  column_to_rownames("repo") %>% 
+  dplyr::select(decimalLongitude, decimalLatitude, depth, year, habitat) %>% 
+  distinct() %>% 
+  rownames_to_column("occ") %>% 
+  separate(col = "occ", into = c("datasetName", "rn"), sep = 4) %>%
+  mutate(scientificName = "Dactylopterus volitans") %>% 
+  dplyr::select(-rn)
+
+
+# mapear ocorrencias
+ggplot() +
+  geom_polygon(data = world, aes(x = long, y = lat, group = group)) +
+  coord_fixed() +
+  theme_classic() +
+  geom_point(data = all_data, aes(x = decimalLongitude, y = decimalLatitude, color = datasetName)) +
+  #theme(legend.title = element_blank()) +
+  labs(x = "longitude", y = "latitude", title = expression(italic("Dactylopterus volitans")))
+write.csv(all_data, "C:/Users/letic/Documents/Pasta de atividades/Mestrado/Ciência colaborativa/occ_GBIF-OBIS_dac_voli.csv", row.names = FALSE)
+
+```
+
+# Análises exploratórias  
+Após a limpeza dos dados e junção dos dada frames dos dois repositório, foram elaboradas análises exploratórias simples com a finalidade de responder duas perguntas. A primeira análise busca responder a seguinte pergunta: Quais são os anos com maior frequência de ocorrência de *Dactylopterus volitans*?  
+  
+A maior frequência de ocorrências foi no ano de 2014, enquanto que nos anos seguintes a frequência foi diminuindo, como é possível observar no histograma abaixo. Para montar o histograma usei a função `hist` que me permite montar histogramas de uma forma bem simples. Essa função também permite algumas alterações como mudança das cores, preenchimento e rótulos. Um problema encontrado nos data frames fornecidos pelo OBIS é que a variável `year` não é reconhecida como uma variável ordinal, então neste caso está sendo representado apenas os anos indicados pelo data frame do GBIF.  
+
+```{r}
+hist(all_data$year, xlab = "Anos", ylab = "Frequência", main = "Histograma das ocorrências de Dactylopterus volitans")
+```
+
+  
+A segunda pergunta que as análises exploratórias buscaram responder é: Qual é o habitat com maior ocorrência de *Dactylopterus volitans*?  
+  
+Para responder essa pergunta as ocorrências foram agrupadas por habitat de acordo com sua latitude, com os dados do data frame `flying_gbif1`. Para montar o gráfico foi utilizado o pacote `plotly` e a função `ggplotly`, em que uma de suas vantagens são os gráficos interativos como o apresentado abaixo. Nele é possivel selecionar ou ocultar variáveis e encontrar informações mais específicas apenas passando o cursor por cima de cada habitat. No gráfico pode-se observar que a maioria das ocorrências estão agrupadas no habitat `Continouns Midium Relief`, o que responde a segunda pergunta. A maioria dos habitats resgistrados nesse data frame está localizado a uma latitude de 25º, enquanto apenas o habitat `Arenal` está a -25º, o que mostra que maioria dos registros dessas espécie foi realizada no norte global.
+
+```{r, message = FALSE, warning=FALSE}
+library(plotly)
+cc <- flying_gbif1 %>% 
+  mutate(lat = round(decimalLatitude)) %>% 
+  group_by(lat, habitat) %>%
+  summarise(occ = length(habitat)) %>%
+  ggplot(aes(y = occ, x = lat, color = habitat)) +
+    geom_point() +
+    theme_classic(base_size = 15) +
+    labs(x = "Latitude", y = 'Ocorrência')
+ggplotly(cc)
+```
+
+
+
+
