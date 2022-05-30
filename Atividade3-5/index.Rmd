@@ -12,7 +12,7 @@ output:
          smooth_scroll: no
 ---
 
-# *Dactylopterus volitans*    
+# *Dactylopterus volitans*       
 O estudo de diversas espécies pode ser feito por meio de repositórios, pacotes e funções na linguagem R. Vamos testar?  
 
 Para começar precisamos escolher a espécie que vamos analisar. Que tal a *Dactylopterus volitans*, conhecido como peixe-voador. O nome popular peixe-voador se deve a suas nadadeiras parecerem asas quando abertas. O peixe-voador é uma espécie marinha e estuariana associada a recifes e sua distibuição se estende por todo o Atlântico, do Canadá a Argentina, um lado, e do outro lado do Atlântico se estende pela costa do continente Africano e no Mediterrâneo.
