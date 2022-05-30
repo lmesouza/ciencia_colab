@@ -1,0 +1,314 @@
+---
+title: "Atividade Final"
+author: "Letícia Maria Evangelista de Souza"
+output:
+    html_document:
+       highlight: textmate
+       theme: flatly
+       number_sections: no
+       toc: yes
+       toc_float:
+         collapsed: yes
+         smooth_scroll: no
+---
+
+# *Dactylopterus volitans*       
+O estudo de diversas espécies pode ser feito por meio de repositórios, pacotes e funções na linguagem R. Vamos testar?  
+
+Para começar precisamos escolher a espécie que vamos analisar. Que tal a *Dactylopterus volitans*, conhecido como peixe-voador. O nome popular peixe-voador se deve a suas nadadeiras parecerem asas quando abertas. O peixe-voador é uma espécie marinha e estuariana associada a recifes e sua distibuição se estende por todo o Atlântico, do Canadá a Argentina, um lado, e do outro lado do Atlântico se estende pela costa do continente Africano e no Mediterrâneo.
+Caso você queira mais informações sobre o peixe-voador acesse o [FishBase](https://fishbase.mnhn.fr/Summary/SpeciesSummary.php?id=1021&lang=english).
+
+![*Dactylopterus volitans* - FishBase](https://www.fishbase.de/images/thumbnails/jpg/tn_Davol_u2.jpg)   
+  
+# Acesso e limpeza de dados pelo GBIF e OBIF
+## GBIF
+
+
+Primeiro, vamos extrair os dados dos repositórios  [GBIF](https://www.gbif.org/) e [OBIS](https://obis.org/) com os pacotes `rgbif` e `robis`. Depois vamos usar o pacote  [tidyverse](https://tidyverse.tidyverse.org/), para carregar os demais pacotes, como o `dplyr`, para manipularmos dados, e o `ggplot`, para visualizarmos dados. Agora vamos carregar o pacote  [rgbif](https://www.gbif.org/pt/tool/81747/rgbif) pois ele permite o acesso aos dados do GBIF. O pacote `rgbif` possui a função `occ_data`, função essa que nos permite buscar dados das espécies pelo nome científico, numeração ou local. O nosso script estará parecido com esse abaixo:
+
+```{r, message = FALSE}
+library(tidyverse)
+library(rgbif)
+flying_gbif <- occ_data(scientificName = "Dactylopterus volitans", 
+                        hasCoordinate = TRUE,
+                        hasGeospatialIssue=FALSE)
+```
+
+Agora nós vamos começar a limpar os dados com as funções `issue` e `strsplit`, a primeira função nos permite identificar os possíveis erros e a segunda nos permite individualizar variáveis duplicadas. Os comandos e *output* no script ficarão como abaixo, em que o carácter $ nos indica que estamos a acessar os data frames baixados do GBIF. Além disso, vamos utilizar a função `dim` para checar as variáveis, essa função nos permite checar a dimensão dos dados retornados pelo repositório.  
+
+
+```{r}
+# dimensoes
+dim(flying_gbif)
+dim(flying_gbif$data)
+
+# checar campos
+flying_gbif$data %>% names
+
+#problemas indentificados pelo repositório
+gbif_issues()
+
+#checagem dos problemas encontrados na base
+flying_gbif$data$issues %>% 
+  unique() %>% 
+  strsplit(., "[,]") %>% 
+  unlist()
+```
+
+
+O conjunto de dados retornado pelo GBIF apresenta diversas variáveis, mas utilizaremos apenas 14 para começarmos a nossa análise. Assim, selecionaremos por meio do pacote `dplyr` as variáveis de interesse e geraremos um data frame com 500 observações, em que cada observação corresponde a uma ocorrência da espécie. Agora, utilizaremos a função`distinct` para verificar as observações, o que reduziu o nosso data frame para 461 observações. Então, utilizaremos a função `unique` para remover as observações duplicadas, como no script e no *output* abaixo:
+
+```{r}
+#seleção de variáveis
+flying_gbif1 <- flying_gbif$data %>%
+  dplyr::select(scientificName, acceptedScientificName, decimalLatitude, decimalLongitude,
+                issues, waterBody, basisOfRecord, occurrenceStatus, rightsHolder, 
+                datasetName, recordedBy, depth, locality, habitat, year) 
+#ocorrências unicas
+flying_gbif1 <- flying_gbif1 %>% 
+  distinct() 
+# checar niveis dos fatores
+lapply(flying_gbif1, unique)
+```
+
+A checagem dos dados pode ser ainda mais refinada. Existem várias possibilidades, mas a que exploraremos aqui é verificar se as coordenadas disponibilizadas são realmente válidas, pois muitas vezes essas coordenadas podem ser associadas a capitais, ou outros locais terra firme, mas a espécie que estamos a analisar é marinha! Para isso utilizamos os pacotes `CoordinateCleaner` e `bcd`, como você pode visualizar abaixo:  
+
+```{r, message=FALSE}
+library(bdc)
+library(CoordinateCleaner)
+```
+
+```{r}
+# checar coordenadas válidas
+check_pf <- 
+  bdc::bdc_coordinates_outOfRange(
+    data = flying_gbif1,
+    lat = "decimalLatitude",
+    lon = "decimalLongitude")
+```
+
+```{r, message=FALSE}
+# checar coordenadas válidas e próximas a capitais (muitas vezes as coordenadas são erroneamente associadas a capitais dos países)
+
+cl <- flying_gbif1 %>%
+  select(acceptedScientificName, decimalLatitude, decimalLongitude) %>%
+  rename(decimallongitude = decimalLongitude,
+         decimallatitude = decimalLatitude,
+         scientificName = acceptedScientificName) %>% 
+  as_tibble() %>% 
+  mutate(val = cc_val(., value = "flagged"),
+         sea = cc_sea(., value = "flagged"),
+         capital = cc_cap(., value = "flagged"))
+cl %>% 
+  rename(decimalLongitude = decimallongitude,
+         decimalLatitude = decimallatitude) %>% 
+  bdc::bdc_quickmap(., col_to_map = "capital")  
+cl %>% 
+  rename(decimalLongitude = decimallongitude,
+         decimalLatitude = decimallatitude) %>% 
+  bdc::bdc_quickmap(., col_to_map = "sea") 
+```
+
+Os *output* que os pacote `CoordinateCleaner` e `bcd` retornaram indicam que as coordenadas são válidas, mas algumas ocorrências estão sinalizadas como próximas a capitas, essas não nos interessam. Assim, para excluírmos essas ocorrências que não nos interessam, em  capitais e em terra firme, checaremos a distribuição do peixe-voador nas regiões oceonográficas ao filtramos a variável `waterBody`, variável essa que categoriza a região oceográfica das de distribuição das espécies. Ainda, podemos visualizar a distribuição das ocorrências do peixe-voador clivada por região com o pacote `ggplot`, um pacote que nos permite visualizar graficamente dados, como no comando, no *output* e no gráfico abaixo.  
+
+```{r}
+# investigar niveis suspeitos
+flying_gbif1 %>% 
+  distinct(waterBody) %>% 
+  pull()
+
+# waterBody
+flying_gbif1 %>%
+  group_by(waterBody) %>% 
+  summarise(occ = length(scientificName)) %>% 
+  ggplot(aes(occ, y=waterBody)) +
+  geom_bar(stat = 'identity')
+```
+
+As ocorrências do peixe-voador se dão no Atlântico e no Mediterrâneo, logo, as ocorrências registradas no Mar de Celebes são suspeitas, pois Mar de Celebes localiza-se no Oceâno Pacífico. Então, vamos excluir essas ocorrências, mas manteremos as ocorrências categorizadas com NA nessa primeira análise. 
+
+```{r}
+# fonte das regioes erradas
+flying_gbif1 %>% 
+  filter(waterBody %in% c("Celebes Sea")) %>% 
+  distinct(datasetName)
+```
+  
+A tabela que nós geramos após a filtragem apresentou que as ocorrências registradas por mergulhadores que são de uma plantaforma específica de ciência cidadã. A maioria das ocorrências suspeitas estavam associadas a esse tipo de coleta, por isso excluiremos as ocorrências associdadas a ela.  
+```{r}
+# 6 ocorrencias
+flying_gbif1 %>% 
+  filter(datasetName %in% c("Diveboard - Scuba diving citizen science"))
+# filtrar todas do dataset suspeito
+flying_gbif_ok <- flying_gbif1 %>% 
+  filter(!datasetName %in% c("Diveboard - Scuba diving citizen science"))
+```
+
+```{r, message=FALSE}
+library(ggmap)
+library(maps)
+library(mapdata)
+
+world <- map_data('world')
+```
+
+
+```{r}
+# checar pontos
+# sem ocorrências no Mar de Celebes!
+ggplot() +
+  geom_polygon(data = world, aes(x = long, y = lat, group = group)) +
+  coord_fixed() +
+  theme_classic() +
+  geom_point(data = flying_gbif_ok, aes(x = decimalLongitude, y = decimalLatitude), color = "red") +
+  labs(x = "longitude", y = "latitude", title = expression(italic("Dactylopterus volitans")))
+```
+
+Outro critério para filtragem que vamos utilizar aqui foi é da profundidade por região oceanográfica, pois o peixe-voador é encontrado em profundidades de no máximo 100 metros, como  recifes, regiões estuarianas e em áreas arenosas.
+
+```{r, message = FALSE, warning=FALSE}
+# checar profundidade
+flying_gbif_ok %>% 
+  ggplot(aes(x = depth, fill = waterBody)) +
+  geom_histogram()
+```
+  
+## OBIS  
+Mas não só de GBIF vivem os pesquisadores! Nós podemos fazer essas mesma limpeza de dados por meio OBIS, o outro repositório supracitado. Aqui utlizaremos o pacote `robis` e a função `occurrence`, que é similar ao `occ_data` do `rgbif`. Mas, podemos idenficar os problemas por meio da coluna `flag`, como abaixo:
+
+```{r, message = FALSE}
+## OBIS
+flying_obis <- robis::occurrence("Dactylopterus volitans")
+# checar dados
+names(flying_obis)
+
+```
+
+
+```{r}
+
+# check NA em datasetName
+flying_obis1 <- flying_obis %>% 
+  dplyr::select(scientificName, decimalLatitude, decimalLongitude, bathymetry,
+                flags, waterBody, basisOfRecord, occurrenceStatus, rightsHolder, 
+                datasetName, recordedBy, depth, locality, habitat) %>% 
+  distinct()
+
+# check problemas reportados (flags)
+flying_obis1 %>% 
+  distinct(flags)
+```
+
+
+```{r}
+# check NA em datasetName
+flying_obis1 %>% 
+  filter(!flags %in% c("no_depth,on_land", "on_land", "on_land,depth_exceeds_bath", "depth_exceeds_bath,on_land"),
+         is.na(datasetName)) %>% 
+  distinct(waterBody)
+```
+
+```{r, , message = FALSE, warning=FALSE}
+# depth ok
+flying_obis1 %>% 
+  filter(!flags %in% c("no_depth,on_land", "on_land", "on_land,depth_exceeds_bath", "depth_exceeds_bath,on_land"),
+         !is.na(datasetName),
+         !waterBody %in% c("Asia", "indien", "pacifique")) %>% 
+  ggplot(aes(x = depth, fill = waterBody)) +
+  geom_histogram() 
+```
+
+```{r}
+# checar niveis
+flying_obis1 %>% 
+  filter(!flags %in% c("no_depth,on_land", "on_land", "on_land,depth_exceeds_bath", "depth_exceeds_bath,on_land"),
+         !is.na(datasetName),
+         !waterBody %in% c("Asia", "indien", "pacifique")) %>% 
+  lapply(., unique)
+
+# ok
+flying_obis_ok <- flying_obis1 %>% 
+  filter(!flags %in% c("no_depth,on_land", "on_land", "on_land,depth_exceeds_bath", "depth_exceeds_bath,on_land"),
+         !is.na(datasetName),
+         !waterBody %in% c("Asia", "indien", "pacifique", NA)) 
+
+```
+
+```{r}
+# check
+ggplot() +
+  geom_polygon(data = world, aes(x = long, y = lat, group = group)) +
+  coord_fixed() +
+  theme_classic() +
+  geom_point(data = flying_obis_ok, aes(x = decimalLongitude, y = decimalLatitude, color = waterBody)) +
+  labs(x = "longitude", y = "latitude", title = expression(italic("Dactylopterus volitans")))
+```
+
+Para finalizar a limpeza dos dados uniremos as ocorrências do GBIF e do OBIS em um único data frame e checaremos duplicatas ou outros problemas.  
+
+```{r, message = FALSE}
+# unir GBIF e OBIS
+
+# ver diferencas
+setdiff(names(flying_gbif_ok), names(flying_obis_ok))
+setdiff(names(flying_obis_ok), names(flying_gbif_ok))
+
+
+all_data <- bind_rows(flying_gbif_ok %>% 
+                        mutate(repo = paste0("gbif", row.names(.))), 
+                      flying_obis_ok %>% 
+                        mutate(repo = paste0("obis", row.names(.)))) %>%
+  column_to_rownames("repo") %>% 
+  dplyr::select(decimalLongitude, decimalLatitude, depth, year, habitat) %>% 
+  distinct() %>% 
+  rownames_to_column("occ") %>% 
+  separate(col = "occ", into = c("datasetName", "rn"), sep = 4) %>%
+  mutate(scientificName = "Dactylopterus volitans") %>% 
+  dplyr::select(-rn)
+
+
+# mapear ocorrencias
+ggplot() +
+  geom_polygon(data = world, aes(x = long, y = lat, group = group)) +
+  coord_fixed() +
+  theme_classic() +
+  geom_point(data = all_data, aes(x = decimalLongitude, y = decimalLatitude, color = datasetName)) +
+  #theme(legend.title = element_blank()) +
+  labs(x = "longitude", y = "latitude", title = expression(italic("Dactylopterus volitans")))
+write.csv(all_data, "C:/Users/letic/Documents/Pasta de atividades/Mestrado/Ciência colaborativa/occ_GBIF-OBIS_dac_voli.csv", row.names = FALSE)
+
+```
+
+# Análises exploratórias  
+
+Vamos explorar nossos dados filtrados!  
+Uma pergunta que podemos fazer é: Quais são os anos com maior frequência de ocorrência do peixe-voador?    
+  
+A maior frequência de ocorrências foi no ano de 2014, enquanto que nos anos seguintes a frequência é menor, como podemos observar no histograma abaixo, gerado com a pela função `hist`.   
+
+```{r}
+hist(all_data$year, xlab = "Anos", ylab = "Frequência", main = "Histograma das ocorrências de Dactylopterus volitans")
+```
+
+  
+Uma outra pergunta que podemos fazer é: Qual é o habitat com maior ocorrência de peixe-voador?  
+  
+Então agruparemos as ocorrências por habitat de acordo com a latitude. Para isso utilizaremos os pacotes `plotly` e a função `ggplotly`, ambos permitem a criação e visualização de gráficos interativos. No gráfico interativo que plotamos podemos selecionar ou ocultar variáveis e encontrar informações mais específicas apenas passando o cursor do mouse por cima de cada habitat. No gráfico podemos observar que a maioria das ocorrências estão agrupadas no habitat `Continouns Midium Relief`. Por fim a maioria dos habitats resgistrados nesse data frame está localizado a uma latitude de 25º, enquanto apenas o habitat `Arenal` está a -25º, o que sugere que maioria dos registros do peixe-voador foi feita no norte global.  
+
+```{r, message = FALSE, warning=FALSE}
+library(plotly)
+cc <- flying_gbif1 %>% 
+  mutate(lat = round(decimalLatitude)) %>% 
+  group_by(lat, habitat) %>%
+  summarise(occ = length(habitat)) %>%
+  ggplot(aes(y = occ, x = lat, color = habitat)) +
+    geom_point() +
+    theme_classic(base_size = 15) +
+    labs(x = "Latitude", y = 'Ocorrência')
+ggplotly(cc)
+```
+
+# Considerações finais  
+Agora temos em mãos um data frame limpo, com dados limpos, alguns gráficos e muitas perguntas ainda não feitas. Aprendemos que as ocorrências do peixe-vaodor concentou-se no ano de 2014 e no habitat Continouns Midium Relief. Descobrimos isso por meio dos dados oriundos do GBIF e do OBIS, que limpamos e começamos a analisar com alguns pacotes e algumas funções, tal qual o multiplicidade de perguntas também são os meios e técnicas para respondê-las. 
+
+
