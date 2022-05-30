@@ -12,16 +12,19 @@ output:
          smooth_scroll: no
 ---
 
-# *Dactylopterus volitans*  
-A espécie escolhida para realizar a atividade é o *Dactylopterus volitans*, conhecido como peixe-voador. O peixe-voador é uma espécie marinha e estuariana associada a recifes que recebe esse nome por suas nadadeiras terem aparência de asas quando estão abertas. A distibuição dessa espécie se estende por todo o Atlântico, do Canadá a Argentina, do outro lado Atlântico, se estende pela da África bem como no Mar Mediterrâneo. Você pode acessar mais informações sobre o *Dactylopterus volitans* no  [FishBase](https://fishbase.mnhn.fr/Summary/SpeciesSummary.php?id=1021&lang=english).
+# *Dactylopterus volitans*    
+O estudo de diversas espécies pode ser feito por meio de repositórios, pacotes e funções na linguagem R. Vamos testar?  
 
-![*Dactylopterus volitans* - BaseFish](https://www.fishbase.de/images/thumbnails/jpg/tn_Davol_u2.jpg)   
+Para começar precisamos escolher a espécie que vamos analisar. Que tal a *Dactylopterus volitans*, conhecido como peixe-voador. O nome popular peixe-voador se deve a suas nadadeiras parecerem asas quando abertas. O peixe-voador é uma espécie marinha e estuariana associada a recifes e sua distibuição se estende por todo o Atlântico, do Canadá a Argentina, um lado, e do outro lado do Atlântico se estende pela costa do continente Africano e no Mediterrâneo.
+Caso você queira mais informações sobre o peixe-voador acesse o [FishBase](https://fishbase.mnhn.fr/Summary/SpeciesSummary.php?id=1021&lang=english).
+
+![*Dactylopterus volitans* - FishBase](https://www.fishbase.de/images/thumbnails/jpg/tn_Davol_u2.jpg)   
   
-# GBIF
-## Acesso e limpeza de dados
+# Acesso e limpeza de dados pelo GBIF e OBIF
+## GBIF
 
 
-Os dados foram extraídos dos repositórios  [GBIF](https://www.gbif.org/) e [OBIS](https://obis.org/), com os pacotes `rgbif` e `robis`. O GBIF foi o repósitório selecionado para iniciar a atividade. O pacote  [tidyverse](https://tidyverse.tidyverse.org/), foi empregado no script para carregar os demais pacotes, como o `dplyr` (para manipular dados) e o `ggplot` (para visualização de dados), que posteriormente foram utilizados nesta atividade. Depois carreguei o pacote [rgbif](https://www.gbif.org/pt/tool/81747/rgbif), que permite o acesso aos dados do GBIF pelo r. O pacote `rgbif` possui a função `occ_data`, essa que permite buscar espécies pelo nome científico, numeração ou local. O script que utilizei foi o que segue abaixo:
+Primeiro, vamos extrair os dados dos repositórios  [GBIF](https://www.gbif.org/) e [OBIS](https://obis.org/) com os pacotes `rgbif` e `robis`. Depois vamos usar o pacote  [tidyverse](https://tidyverse.tidyverse.org/), para carregar os demais pacotes, como o `dplyr`, para manipularmos dados, e o `ggplot`, para visualizarmos dados. Agora vamos carregar o pacote  [rgbif](https://www.gbif.org/pt/tool/81747/rgbif) pois ele permite o acesso aos dados do GBIF. O pacote `rgbif` possui a função `occ_data`, função essa que nos permite buscar dados das espécies pelo nome científico, numeração ou local. O nosso script estará parecido com esse abaixo:
 
 ```{r, message = FALSE}
 library(tidyverse)
@@ -31,7 +34,8 @@ flying_gbif <- occ_data(scientificName = "Dactylopterus volitans",
                         hasGeospatialIssue=FALSE)
 ```
 
-Comecei a limpeza dos dados por meio da função `dim` para checar a dimensão dos dados retornados pelo repositório. O caracter $ no script serve para acessar os data frames retornados pelo GBIF . Já que, antes de utilizarmos os data frames, devemos checar as variáveis presentes e também os tipos de erros encontrados, eles podem ser checados pela função `issue` e a função `strsplit`, que individualiza os erros encontrados e permite conferi-los. Como pode ser observado no script abaixo:
+Agora nós vamos começar a limpar os dados com as funções `issue` e `strsplit`, a primeira função nos permite identificar os possíveis erros e a segunda nos permite individualizar variáveis duplicadas. Os comandos e *output* no script ficarão como abaixo, em que o carácter $ nos indica que estamos a acessar os data frames baixados do GBIF. Além disso, vamos utilizar a função `dim` para checar as variáveis, essa função nos permite checar a dimensão dos dados retornados pelo repositório.  
+
 
 ```{r}
 # dimensoes
@@ -51,7 +55,8 @@ flying_gbif$data$issues %>%
   unlist()
 ```
 
-O conjunto de dados retornado pelo GBIF apresenta diversas variáveis, das quais, 14 foram selecionadas para começar a análise, fiz a seleção  por meio do pacote `dplyr`. Com as variáveis de interesse selecionadas, gerei um data frame com 500 observações, cuja cada observação corresponde a uma ocorrência da espécie. Depois de utilizar a função `distinct`,o número de observações caiu para 461, pois essa função verifica as observações. Então, utilizei a função `unique` para remover as observações duplicadas.
+
+O conjunto de dados retornado pelo GBIF apresenta diversas variáveis, mas utilizaremos apenas 14 para começarmos a nossa análise. Assim, selecionaremos por meio do pacote `dplyr` as variáveis de interesse e geraremos um data frame com 500 observações, em que cada observação corresponde a uma ocorrência da espécie. Agora, utilizaremos a função`distinct` para verificar as observações, o que reduziu o nosso data frame para 461 observações. Então, utilizaremos a função `unique` para remover as observações duplicadas, como no script e no *output* abaixo:
 
 ```{r}
 #seleção de variáveis
@@ -66,7 +71,8 @@ flying_gbif1 <- flying_gbif1 %>%
 lapply(flying_gbif1, unique)
 ```
 
-Além da checagem dos erros encontrados na base, é interessante fazer uma chegacagem mais refinada dos dados. Um exemplo é verificar se as coordenadas disponibilizadas são realmente válidas, pois muitas vezes essas coordenadas podem ser associadas a capitais, porém estas estão em terra e a espécie selecionada neste trabalho é marinha. Neste caso, a checagem foi realizada por meio dos pacotes `CoordinateCleaner` e `bcd`, como mostra o script abaixo.   
+A checagem dos dados pode ser ainda mais refinada. Existem várias possibilidades, mas a que exploraremos aqui é verificar se as coordenadas disponibilizadas são realmente válidas, pois muitas vezes essas coordenadas podem ser associadas a capitais, ou outros locais terra firme, mas a espécie que estamos a analisar é marinha! Para isso utilizamos os pacotes `CoordinateCleaner` e `bcd`, como você pode visualizar abaixo:  
+
 ```{r, message=FALSE}
 library(bdc)
 library(CoordinateCleaner)
@@ -103,7 +109,7 @@ cl %>%
   bdc::bdc_quickmap(., col_to_map = "sea") 
 ```
 
-As coordenadas são válidas, mas algumas ocorrências estão sinalizadas como próximas a capitas. Para excluir ocorrências em terra foi feita a checagem da distribuição da espécie em relação as regiões oceanográficas utilizando a variável `waterBody`, que mostra em qual região oceanográfica a espécie foi encontrada. Na tabela abaixo é possível observar quais são as regiões oceanográficas, mas com os gráficos é possível visualizar a distribuição de ocorrências por região, para isso utilizei o pacote `ggplot`.   
+Os *output* que os pacote `CoordinateCleaner` e `bcd` retornaram indicam que as coordenadas são válidas, mas algumas ocorrências estão sinalizadas como próximas a capitas, essas não nos interessam. Assim, para excluírmos essas ocorrências que não nos interessam, em  capitais e em terra firme, checaremos a distribuição do peixe-voador nas regiões oceonográficas ao filtramos a variável `waterBody`, variável essa que categoriza a região oceográfica das de distribuição das espécies. Ainda, podemos visualizar a distribuição das ocorrências do peixe-voador clivada por região com o pacote `ggplot`, um pacote que nos permite visualizar graficamente dados, como no comando, no *output* e no gráfico abaixo.  
 
 ```{r}
 # investigar niveis suspeitos
@@ -119,7 +125,7 @@ flying_gbif1 %>%
   geom_bar(stat = 'identity')
 ```
 
-Conforme abordado no início do texto, o *Dactylopterus volitans* é uma espécie com ocorrências no Atlântico e no Mediterrâneo. Logo, ocorrências registradas no Mar de Celebes podem ser consideradas suspeitas, pois fica no Oceano Pacífico. Neste caso, escolhi excluir essas ocorrências.  
+As ocorrências do peixe-voador se dão no Atlântico e no Mediterrâneo, logo, as ocorrências registradas no Mar de Celebes são suspeitas, pois Mar de Celebes localiza-se no Oceâno Pacífico. Então, vamos excluir essas ocorrências, mas manteremos as ocorrências categorizadas com NA nessa primeira análise. 
 
 ```{r}
 # fonte das regioes erradas
@@ -128,7 +134,7 @@ flying_gbif1 %>%
   distinct(datasetName)
 ```
   
-A tabela gerada após a filtragem, mostrou que essas ocorrências foram registradas por mergulhadores que fazem parte de uma plantaforma específica de ciência cidadã. A maioria das ocorrências suspeitas estavam associadas a esse tipo de coleta, assim preferi excluir as ocorrências associdadas a ela.  
+A tabela que nós geramos após a filtragem apresentou que as ocorrências registradas por mergulhadores que são de uma plantaforma específica de ciência cidadã. A maioria das ocorrências suspeitas estavam associadas a esse tipo de coleta, por isso excluiremos as ocorrências associdadas a ela.  
 ```{r}
 # 6 ocorrencias
 flying_gbif1 %>% 
@@ -158,8 +164,8 @@ ggplot() +
   labs(x = "longitude", y = "latitude", title = expression(italic("Dactylopterus volitans")))
 ```
 
-Outro critério utilizado para checagem de dados foi checar a profundidade por região oceanográfica. O *Dactylopterus volitans* é um peixe encontrado em recifes, regiões estuarianas e também é muito comum encontra-lo em áreas arenosas, ou seja, essa é uma espécie que espera-se ser encontrada em até no máximo 100 metros de profundidade`[^1]`.
-`[^1]: [FishBase]` 
+Outro critério para filtragem que vamos utilizar aqui foi é da profundidade por região oceanográfica, pois o peixe-voador é encontrado em profundidades de no máximo 100 metros, como  recifes, regiões estuarianas e em áreas arenosas.
+
 ```{r, message = FALSE, warning=FALSE}
 # checar profundidade
 flying_gbif_ok %>% 
@@ -167,8 +173,9 @@ flying_gbif_ok %>%
   geom_histogram()
 ```
   
-# OBIS  
-Os procedimentos de limpeza e seleção de variáveis aplicados aos dataframes do GBIF também foram aplicados aos disponibilizados pelo OBIS. Aqui foi utlizado o pacote `robis` e a função `occurrence`, tem que a mesma função que o `occ_data` do `rbif`. Um ponto interessante é que o OBIF utiliza o sistema Darwin Core, então pode-se encontrar variávies com mesmo nome, neste caso a coluna `flag` utilizada para reportar problemas.    
+## OBIS  
+Mas não só de GBIF vivem os pesquisadores! Nós podemos fazer essas mesma limpeza de dados por meio OBIS, o outro repositório supracitado. Aqui utlizaremos o pacote `robis` e a função `occurrence`, que é similar ao `occ_data` do `rgbif`. Mas, podemos idenficar os problemas por meio da coluna `flag`, como abaixo:
+
 ```{r, message = FALSE}
 ## OBIS
 flying_obis <- robis::occurrence("Dactylopterus volitans")
@@ -237,7 +244,7 @@ ggplot() +
   labs(x = "longitude", y = "latitude", title = expression(italic("Dactylopterus volitans")))
 ```
 
-Por fim, uni todas as ocorrências do GBIF e do OBIS em um único data frame, com checagem dos dados para ver se existiam duplicatas ou outros problemas.
+Para finalizar a limpeza dos dados uniremos as ocorrências do GBIF e do OBIS em um único data frame e checaremos duplicatas ou outros problemas.  
 
 ```{r, message = FALSE}
 # unir GBIF e OBIS
@@ -273,18 +280,20 @@ write.csv(all_data, "C:/Users/letic/Documents/Pasta de atividades/Mestrado/Ciên
 ```
 
 # Análises exploratórias  
-Após a limpeza dos dados e junção dos dada frames, foram elaboradas análises exploratórias simples com a finalidade de responder duas perguntas. A primeira análise busca responder a seguinte pergunta: Quais são os anos com maior frequência de ocorrência de *Dactylopterus volitans*?  
+
+Vamos explorar nossos dados filtrados!  
+Uma pergunta que podemos fazer é: Quais são os anos com maior frequência de ocorrência do peixe-voador?    
   
-A maior frequência de ocorrências foi no ano de 2014, enquanto que nos anos seguintes a frequência foi diminuindo, como é possível observar no histograma abaixo. Para montar o histograma usei a função `hist` que me permitiu montar histogramas de uma forma bem simples. Essa função também permite algumas alterações como mudança das cores, preenchimento e rótulos. Um problema encontrado nos data frames fornecidos pelo OBIS é que a variável `year` não é reconhecida como uma variável ordinal, então neste caso está sendo representado apenas os anos indicados pelo data frame do GBIF.  
+A maior frequência de ocorrências foi no ano de 2014, enquanto que nos anos seguintes a frequência é menor, como podemos observar no histograma abaixo, gerado com a pela função `hist`.   
 
 ```{r}
 hist(all_data$year, xlab = "Anos", ylab = "Frequência", main = "Histograma das ocorrências de Dactylopterus volitans")
 ```
 
   
-A segunda pergunta que as análises exploratórias buscaram responder é: Qual é o habitat com maior ocorrência de *Dactylopterus volitans*?  
+Uma outra pergunta que podemos fazer é: Qual é o habitat com maior ocorrência de peixe-voador?  
   
-Para responder essa pergunta as ocorrências foram agrupadas por habitat de acordo com sua latitude, com os dados do data frame `flying_gbif1`. Para montar o gráfico foi utilizado o pacote `plotly` e a função `ggplotly`, em que uma de suas vantagens são os gráficos interativos como o apresentado abaixo. Nele é possivel selecionar ou ocultar variáveis e encontrar informações mais específicas apenas passando o cursor por cima de cada habitat. No gráfico pode-se observar que a maioria das ocorrências estão agrupadas no habitat `Continouns Midium Relief`, o que responde a segunda pergunta. A maioria dos habitats resgistrados nesse data frame está localizado a uma latitude de 25º, enquanto apenas o habitat `Arenal` está a -25º, o que mostra que maioria dos registros dessas espécie foi realizada no norte global.
+Então agruparemos as ocorrências por habitat de acordo com a latitude. Para isso utilizaremos os pacotes `plotly` e a função `ggplotly`, ambos permitem a criação e visualização de gráficos interativos. No gráfico interativo que plotamos podemos selecionar ou ocultar variáveis e encontrar informações mais específicas apenas passando o cursor do mouse por cima de cada habitat. No gráfico podemos observar que a maioria das ocorrências estão agrupadas no habitat `Continouns Midium Relief`. Por fim a maioria dos habitats resgistrados nesse data frame está localizado a uma latitude de 25º, enquanto apenas o habitat `Arenal` está a -25º, o que sugere que maioria dos registros do peixe-voador foi feita no norte global.  
 
 ```{r, message = FALSE, warning=FALSE}
 library(plotly)
@@ -299,6 +308,7 @@ cc <- flying_gbif1 %>%
 ggplotly(cc)
 ```
 
-
+# Considerações finais  
+Agora temos em mãos um data frame limpo, com dados limpos, alguns gráficos e muitas perguntas ainda não feitas. Aprendemos que as ocorrências do peixe-vaodor concentou-se no ano de 2014 e no habitat Continouns Midium Relief. Descobrimos isso por meio dos dados oriundos do GBIF e do OBIS, que limpamos e começamos a analisar com alguns pacotes e algumas funções, tal qual o multiplicidade de perguntas também são os meios e técnicas para respondê-las. 
 
 
