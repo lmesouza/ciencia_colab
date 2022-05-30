@@ -15,12 +15,12 @@ output:
 # *Dactylopterus volitans*       
 O estudo de diversas espécies pode ser feito por meio de repositórios, pacotes e funções na linguagem R. Vamos testar?  
 
-Para começar precisamos escolher a espécie que vamos analisar. Que tal a *Dactylopterus volitans*, conhecido como peixe-voador. O nome popular peixe-voador se deve a suas nadadeiras parecerem asas quando abertas. O peixe-voador é uma espécie marinha e estuariana associada a recifes e sua distibuição se estende por todo o Atlântico, do Canadá a Argentina, um lado, e do outro lado do Atlântico se estende pela costa do continente Africano e no Mediterrâneo.
+Para começar precisamos escolher a espécie que vamos analisar. Que tal a *Dactylopterus volitans*, conhecido como peixe-voador? O nome popular peixe-voador se deve a suas nadadeiras parecerem asas quando abertas. O peixe-voador é uma espécie marinha e estuariana associada a recifes e sua distibuição se estende por todo o Atlântico, do Canadá a Argentina, e do outro lado do Atlântico, se estende pela costa do continente Africano e no Mediterrâneo.
 Caso você queira mais informações sobre o peixe-voador acesse o [FishBase](https://fishbase.mnhn.fr/Summary/SpeciesSummary.php?id=1021&lang=english).
 
 ![*Dactylopterus volitans* - FishBase](https://www.fishbase.de/images/thumbnails/jpg/tn_Davol_u2.jpg)   
   
-# Acesso e limpeza de dados pelo GBIF e OBIF
+# Acesso e limpeza de dados pelo GBIF e OBIS
 ## GBIF
 
 
@@ -164,7 +164,7 @@ ggplot() +
   labs(x = "longitude", y = "latitude", title = expression(italic("Dactylopterus volitans")))
 ```
 
-Outro critério para filtragem que vamos utilizar aqui foi é da profundidade por região oceanográfica, pois o peixe-voador é encontrado em profundidades de no máximo 100 metros, como  recifes, regiões estuarianas e em áreas arenosas.
+Outro critério para filtragem que vamos utilizar aqui é o da profundidade por região oceanográfica, pois o peixe-voador é encontrado em profundidades de no máximo 100 metros, como  recifes, regiões estuarianas e em áreas arenosas.
 
 ```{r, message = FALSE, warning=FALSE}
 # checar profundidade
@@ -174,7 +174,7 @@ flying_gbif_ok %>%
 ```
   
 ## OBIS  
-Mas não só de GBIF vivem os pesquisadores! Nós podemos fazer essas mesma limpeza de dados por meio OBIS, o outro repositório supracitado. Aqui utlizaremos o pacote `robis` e a função `occurrence`, que é similar ao `occ_data` do `rgbif`. Mas, podemos idenficar os problemas por meio da coluna `flag`, como abaixo:
+Mas não só de GBIF vivem os pesquisadores! Nós podemos fazer essa mesma limpeza de dados por meio OBIS, o outro repositório supracitado. Aqui utlizaremos o pacote `robis` e a função `occurrence`, que é similar ao `occ_data` do `rgbif`. Além disso, podemos idenficar os problemas por meio da coluna `flag`, como abaixo:
 
 ```{r, message = FALSE}
 ## OBIS
@@ -284,7 +284,7 @@ write.csv(all_data, "C:/Users/letic/Documents/Pasta de atividades/Mestrado/Ciên
 Vamos explorar nossos dados filtrados!  
 Uma pergunta que podemos fazer é: Quais são os anos com maior frequência de ocorrência do peixe-voador?    
   
-A maior frequência de ocorrências foi no ano de 2014, enquanto que nos anos seguintes a frequência é menor, como podemos observar no histograma abaixo, gerado com a pela função `hist`.   
+A maior frequência de ocorrências foi no ano de 2014, enquanto que nos anos seguintes a frequência é menor, como podemos observar no histograma abaixo, gerado pela função `hist`.   
 
 ```{r}
 hist(all_data$year, xlab = "Anos", ylab = "Frequência", main = "Histograma das ocorrências de Dactylopterus volitans")
@@ -293,7 +293,7 @@ hist(all_data$year, xlab = "Anos", ylab = "Frequência", main = "Histograma das 
   
 Uma outra pergunta que podemos fazer é: Qual é o habitat com maior ocorrência de peixe-voador?  
   
-Então agruparemos as ocorrências por habitat de acordo com a latitude. Para isso utilizaremos os pacotes `plotly` e a função `ggplotly`, ambos permitem a criação e visualização de gráficos interativos. No gráfico interativo que plotamos podemos selecionar ou ocultar variáveis e encontrar informações mais específicas apenas passando o cursor do mouse por cima de cada habitat. No gráfico podemos observar que a maioria das ocorrências estão agrupadas no habitat `Continouns Midium Relief`. Por fim a maioria dos habitats resgistrados nesse data frame está localizado a uma latitude de 25º, enquanto apenas o habitat `Arenal` está a -25º, o que sugere que maioria dos registros do peixe-voador foi feita no norte global.  
+Para respondermos essa questão iremos agrupar as ocorrências por habitat de acordo com a latitude. Para isso utilizaremos os pacotes `plotly` e a função `ggplotly`, ambos permitem a criação e visualização de gráficos interativos. No gráfico interativo que plotamos podemos selecionar ou ocultar variáveis e encontrar informações mais específicas apenas passando o cursor do mouse por cima de cada habitat. No gráfico podemos observar que a maioria das ocorrências estão agrupadas no habitat `Continouns Midium Relief`. Por fim a maioria dos habitats resgistrados nesse data frame está localizado a uma latitude de 25º, enquanto apenas o habitat `Arenal` está a -25º, o que sugere que maioria dos registros do peixe-voador foi feita no norte global.  
 
 ```{r, message = FALSE, warning=FALSE}
 library(plotly)
@@ -309,6 +309,6 @@ ggplotly(cc)
 ```
 
 # Considerações finais  
-Agora temos em mãos um data frame limpo, com dados limpos, alguns gráficos e muitas perguntas ainda não feitas. Aprendemos que as ocorrências do peixe-vaodor concentou-se no ano de 2014 e no habitat Continouns Midium Relief. Descobrimos isso por meio dos dados oriundos do GBIF e do OBIS, que limpamos e começamos a analisar com alguns pacotes e algumas funções, tal qual o multiplicidade de perguntas também são os meios e técnicas para respondê-las. 
+Agora temos em mãos um data frame limpo, com dados limpos, alguns gráficos e muitas perguntas ainda não feitas. Aprendemos que as ocorrências do peixe-vaodor concentou-se no ano de 2014 e no habitat Continouns Midium Relief. Descobrimos isso por meio dos dados oriundos do GBIF e do OBIS, que limpamos e começamos a analisar com alguns pacotes e algumas funções e tal qual o multiplicidade de perguntas também são os meios e técnicas para respondê-las. 
 
 
