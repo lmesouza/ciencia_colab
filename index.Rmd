@@ -291,7 +291,7 @@ hist(all_data$year, xlab = "Anos", ylab = "Frequência", main = "Histograma das 
 ```
 
   
-Uma outra pergunta que podemos fazer é: Qual é o habitat com maior ocorrência de peixe-voador?  
+Uma outra pergunta que podemos fazer é: qual é o habitat com maior ocorrência de peixe-voador?  
   
 Para respondermos essa questão iremos agrupar as ocorrências por habitat de acordo com a latitude. Para isso utilizaremos os pacotes `plotly` e a função `ggplotly`, ambos permitem a criação e visualização de gráficos interativos. No gráfico interativo que plotamos podemos selecionar ou ocultar variáveis e encontrar informações mais específicas apenas passando o cursor do mouse por cima de cada habitat. No gráfico podemos observar que a maioria das ocorrências estão agrupadas no habitat `Continouns Medium Relief`. Por fim a maioria dos habitats resgistrados nesse data frame está localizado a uma latitude de 25º, enquanto apenas o habitat `Arenal` está a -25º, o que sugere que maioria dos registros do peixe-voador foi feita no norte global.  
 
